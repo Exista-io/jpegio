@@ -44,6 +44,20 @@ if sys.platform == 'darwin': # macOS
     # essential for JPEG DCT access). Fork patch by Exista-io for
     # authlayer v0.5 PhotoHolmes integration on arm64 macOS, 2026-05-24.
     cargs.append('-mmacosx-version-min=10.9')
+
+    # Some Apple Command Line Tools installs have an inconsistent C++
+    # header layout: clang++ searches /Library/Developer/CommandLineTools/
+    # usr/include/c++/v1/ (essentially empty, only __cxx_version) while
+    # the actual headers (cstdlib, iostream, vector, ...) live under
+    # /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/
+    # c++/v1/. Result: `fatal error: 'cstdlib' file not found` during
+    # the extension build. Defensive add — only if the SDK path exists,
+    # so this is a no-op on healthy CLT installs and on non-CLT-based
+    # toolchains (full Xcode, Homebrew clang, etc.). Fork patch by
+    # Exista-io 2026-05-24.
+    _SDK_CPP_HEADERS = '/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/c++/v1'
+    if os.path.isdir(_SDK_CPP_HEADERS):
+        cargs.append('-isystem%s' % _SDK_CPP_HEADERS)
     
     largs.append('-stdlib=libc++')
     largs.append('-mmacosx-version-min=10.9')
