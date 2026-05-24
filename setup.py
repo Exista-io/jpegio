@@ -34,13 +34,15 @@ cargs.extend(['-w', '-fPIC'])
 if sys.platform == 'darwin': # macOS
     os_arch = "mac_%s"%(arch)
 
-    # `-march=native` is an x86 optimization flag; clang on arm64 (Apple
-    # Silicon) errors with "unsupported argument 'native' to option
-    # '-march='". Gate it on x86_64 hosts so this builds on both Intel
-    # and arm64 Macs. (Fork patch by Exista-io for authlayer v0.5
-    # PhotoHolmes integration on arm64 macOS, 2026-05-24.)
-    if platform.machine() in ('x86_64', 'i386', 'i686'):
-        cargs.append('-march=native')
+    # `-march=native` removed: clang on arm64 (Apple Silicon) errors with
+    # "unsupported argument 'native' to option '-march='". The Python.org
+    # universal2 distribution compiles extensions for both arm64 and
+    # x86_64 in the same invocation, so a runtime platform.machine()
+    # check does NOT suffice — cargs is shared across both arch passes,
+    # and the arm64 pass fails regardless of host CPU. Dropping the flag
+    # entirely costs negligible perf (CPU-specific micro-optimization not
+    # essential for JPEG DCT access). Fork patch by Exista-io for
+    # authlayer v0.5 PhotoHolmes integration on arm64 macOS, 2026-05-24.
     cargs.append('-mmacosx-version-min=10.9')
     
     largs.append('-stdlib=libc++')
